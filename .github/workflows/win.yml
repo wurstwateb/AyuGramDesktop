@@ -119,6 +119,8 @@ jobs:
           restore-keys: ${{ runner.OS }}-${{ matrix.arch }}-${{ matrix.qt || 'qt' }}-
 
       - name: Libraries.
+        id: libraries
+        continue-on-error: true
         run: |
           %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat silent ${{ matrix.qt }}
 
@@ -130,7 +132,7 @@ jobs:
           key: ${{ runner.OS }}-${{ runner.arch }}-third-party-${{ env.CACHE_KEY }}
 
       - name: Save Libraries cache before compiling.
-        if: steps.cache-libs.outputs.cache-hit != 'true'
+        if: always() && steps.cache-libs.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: |
@@ -142,13 +144,17 @@ jobs:
           key: ${{ runner.OS }}-${{ matrix.arch }}-libs-${{ env.CACHE_KEY }}
 
       - name: Save Qt cache before compiling.
-        if: steps.cache-qt.outputs.cache-hit != 'true'
+        if: always() && steps.cache-qt.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: |
             ${{ env.LibrariesPath }}\[qQ]t[_-]*
             ${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
           key: ${{ runner.OS }}-${{ matrix.arch }}-${{ matrix.qt || 'qt' }}-${{ env.CACHE_KEY }}
+
+      - name: Verify libraries.
+        if: steps.libraries.outcome != 'success'
+        run: exit /b 1
 
       - name: Read configuration matrix.
         shell: bash
