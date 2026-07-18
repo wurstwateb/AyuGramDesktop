@@ -15,6 +15,8 @@
 #include "history/history.h"
 #include "history/history_item.h"
 #include "history/history_item_components.h"
+#include "history/view/history_view_item_preview.h"
+#include "lang/lang_keys.h"
 #include "main/main_session.h"
 
 namespace AyuMessages {
@@ -66,6 +68,12 @@ void map(not_null<HistoryItem*> item, AyuMessageBase &message) {
 	message.replyPeerId = 0;
 	message.replyTopId = 0;
 	message.replyForumTopic = false;
+	if (const auto reply = item->Get<HistoryMessageReply>()) {
+		message.replyMessageId = reply->messageId().bare;
+		message.replyPeerId = reply->externalPeerId().value;
+		message.replyTopId = reply->topMessageId().bare;
+		message.replyForumTopic = reply->topicPost();
+	}
 	// message.replySerialized
 	// message.replyMarkupSerialized
 	message.entityCreateDate = base::unixtime::now();
@@ -116,7 +124,16 @@ void addDeletedMessage(not_null<HistoryItem*> item) {
 	map(item, message);
 
 	if (message.text.empty()) {
-		return;
+		// Media-only and service messages used to disappear completely after a
+		// restart. Preserve their localized preview (for example "Photo" or
+		// "Voice message") until their full media payload can be persisted.
+		const auto preview = item->toPreview({
+			.hideSender = true,
+			.generateImages = false,
+		}).text.text;
+		message.text = (preview.isEmpty()
+			? tr::lng_deleted_message(tr::now)
+			: preview).toStdString();
 	}
 
 	AyuDatabase::addDeletedMessage(message);
@@ -125,8 +142,31 @@ void addDeletedMessage(not_null<HistoryItem*> item) {
 std::vector<AyuMessageBase>
 getDeletedMessages(not_null<PeerData*> peer, ID topicId, ID minId, ID maxId, int totalLimit, const QString &searchQuery) {
 	const ID userId = peer->session().userId().bare & PeerId::kChatTypeMask;
-	return convertToBase(
-		AyuDatabase::getDeletedMessages(userId, getDialogIdFromPeer(peer), topicId, minId, maxId, totalLimit, searchQuery.toStdString()));
+	try {
+		return convertToBase(AyuDatabase::getDeletedMessages(
+			userId,
+			getDialogIdFromPeer(peer),
+			topicId,
+			minId,
+			maxId,
+			totalLimit,
+			searchQuery.toStdString()));
+	} catch (const std::exception &ex) {
+		LOG(("Failed to load deleted messages: %1").arg(ex.what()));
+		return {};
+	}
+}
+
+std::vector<AyuMessageBase> getDeletedMessagesByDate(
+		not_null<PeerData*> peer,
+		int minDate,
+		int maxDate) {
+	const ID userId = peer->session().userId().bare & PeerId::kChatTypeMask;
+	return convertToBase(AyuDatabase::getDeletedMessagesByDate(
+		userId,
+		getDialogIdFromPeer(peer),
+		minDate,
+		maxDate));
 }
 
 bool hasDeletedMessages(not_null<PeerData*> peer, ID topicId) {

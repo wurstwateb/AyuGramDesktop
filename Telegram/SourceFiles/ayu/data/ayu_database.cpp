@@ -23,6 +23,10 @@ auto storage = make_storage(
 			   column<DeletedMessage>(&DeletedMessage::dialogId),
 			   column<DeletedMessage>(&DeletedMessage::topicId),
 			   column<DeletedMessage>(&DeletedMessage::messageId)),
+	make_index("idx_deleted_message_userId_dialogId_date",
+			   column<DeletedMessage>(&DeletedMessage::userId),
+			   column<DeletedMessage>(&DeletedMessage::dialogId),
+			   column<DeletedMessage>(&DeletedMessage::date)),
 	make_index("idx_edited_message_userId_dialogId_messageId",
 			   column<EditedMessage>(&EditedMessage::userId),
 			   column<EditedMessage>(&EditedMessage::dialogId),
@@ -240,6 +244,14 @@ void initialize() {
 			storage.insert(SchemaVersion{1, 0});
 		}
 	}
+
+	// Keep one serialized SQLite connection for all main/background users of
+	// the Ayu database. WAL + FULL synchronous makes a committed anti-recall
+	// record survive an application or system crash.
+	storage.open_forever();
+	storage.busy_timeout(5000);
+	storage.pragma.journal_mode(journal_mode::WAL);
+	storage.pragma.synchronous(2);
 }
 
 void addEditedMessage(const EditedMessage &message) {
@@ -290,6 +302,13 @@ bool hasRevisions(ID userId, ID dialogId, ID messageId) {
 void addDeletedMessage(const DeletedMessage &message) {
 	try {
 		storage.begin_transaction();
+		storage.remove_all<DeletedMessage>(
+			where(
+				column<DeletedMessage>(&DeletedMessage::userId) == message.userId and
+				column<DeletedMessage>(&DeletedMessage::dialogId) == message.dialogId and
+				column<DeletedMessage>(&DeletedMessage::messageId) == message.messageId
+			)
+		);
 		storage.insert(message);
 		storage.commit();
 	} catch (std::exception &ex) {
@@ -297,7 +316,7 @@ void addDeletedMessage(const DeletedMessage &message) {
 			storage.rollback();
 		} catch (...) {
 		}
-		LOG(("Failed to save edited message for some reason: %1").arg(ex.what()));
+		LOG(("Failed to save deleted message: %1").arg(ex.what()));
 	}
 }
 
@@ -337,6 +356,27 @@ std::vector<DeletedMessage> getDeletedMessages(ID userId, ID dialogId, ID topicI
 		order_by(column<DeletedMessage>(&DeletedMessage::messageId)).desc(),
 		limit(totalLimit)
 	);
+}
+
+std::vector<DeletedMessage> getDeletedMessagesByDate(
+		ID userId,
+		ID dialogId,
+		int minDate,
+		int maxDate) {
+	try {
+		return storage.get_all<DeletedMessage>(
+			where(
+				column<DeletedMessage>(&DeletedMessage::userId) == userId and
+				column<DeletedMessage>(&DeletedMessage::dialogId) == dialogId and
+				(column<DeletedMessage>(&DeletedMessage::date) >= minDate or minDate == 0) and
+				(column<DeletedMessage>(&DeletedMessage::date) < maxDate or maxDate == 0)
+			),
+			order_by(column<DeletedMessage>(&DeletedMessage::date)).asc()
+		);
+	} catch (const std::exception &ex) {
+		LOG(("Failed to load deleted messages by date: %1").arg(ex.what()));
+		return {};
+	}
 }
 
 bool hasDeletedMessages(ID userId, ID dialogId, ID topicId) {

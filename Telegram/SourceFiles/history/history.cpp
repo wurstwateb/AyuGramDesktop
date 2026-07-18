@@ -85,6 +85,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 // AyuGram includes
 #include "ayu/ayu_settings.h"
 #include "ayu/ayu_state.h"
+#include "ayu/data/messages_storage.h"
+#include "ayu/utils/ayu_mapper.h"
 
 
 namespace {
@@ -4175,6 +4177,112 @@ void History::insertMessageToBlocks(not_null<HistoryItem*> item) {
 	finishBuildingFrontBlock();
 }
 
+void History::restoreAyuDeletedMessages(TimeId firstDate, TimeId lastDate) {
+	if (!AyuSettings::getInstance().saveDeletedMessages()) {
+		return;
+	}
+
+	const auto stored = AyuMessages::getDeletedMessagesByDate(
+		peer,
+		firstDate,
+		lastDate);
+	for (const auto &message : stored) {
+		if (!message.messageId
+			|| _ayuRestoredDeletedMessageIds.contains(message.messageId)) {
+			continue;
+		}
+
+		// A live in-memory deleted item is already the best representation.
+		// This happens when a range is reloaded without restarting the process.
+		if (const auto existing = owner().message(
+				peer,
+				MsgId(message.messageId))) {
+			_ayuRestoredDeletedMessageIds.emplace(
+				message.messageId,
+				existing->id);
+			continue;
+		}
+
+		PeerData *from = nullptr;
+		if (message.fromId) {
+			const auto peerBareId = ID(
+				peer->id.value & PeerId::kChatTypeMask);
+			if (message.fromId == peerBareId) {
+				from = peer;
+			}
+			if (!from) {
+				from = owner().userLoaded(UserId(message.fromId));
+			}
+			if (!from) {
+				from = owner().channelLoaded(ChannelId(message.fromId));
+			}
+			if (!from) {
+				from = owner().chatLoaded(ChatId(message.fromId));
+			}
+		}
+
+		auto flags = MessageFlags();
+		flags |= MessageFlag::Local;
+		if (from) {
+			flags |= MessageFlag::HasFromId;
+		}
+		const auto selfId = ID(
+			session().userId().bare & PeerId::kChatTypeMask);
+		if (message.fromId == selfId) {
+			flags |= MessageFlag::Outgoing;
+		}
+		if (message.topicId || message.replyMessageId || message.replyTopId) {
+			flags |= MessageFlag::HasReplyInfo;
+		}
+		auto postAuthor = QString::fromStdString(message.postAuthor);
+		if (!from && postAuthor.isEmpty() && message.fromId) {
+			postAuthor = u"Unknown sender %1"_q.arg(message.fromId);
+		}
+		if (!postAuthor.isEmpty()) {
+			flags |= MessageFlag::HasPostAuthor;
+		}
+
+		auto text = Ui::Text::WithEntities(
+			QString::fromStdString(message.text));
+		if (!message.textEntities.empty()) {
+			const auto entities = AyuMapper::deserializeTextWithEntities(
+				message.textEntities);
+			text.entities = Api::EntitiesFromMTP(&session(), entities.v);
+		}
+		const auto restoredReply = message.replyMessageId
+			? _ayuRestoredDeletedMessageIds.find(message.replyMessageId)
+			: end(_ayuRestoredDeletedMessageIds);
+		const auto replyId = (restoredReply != end(_ayuRestoredDeletedMessageIds))
+			? restoredReply->second
+			: MsgId(message.replyMessageId);
+		const auto replyPeer = (restoredReply != end(_ayuRestoredDeletedMessageIds))
+			? peer->id
+			: message.replyPeerId
+			? PeerId(message.replyPeerId)
+			: peer->id;
+
+		const auto item = makeMessage({
+			.id = owner().nextLocalMessageId(),
+			.flags = flags,
+			.from = from ? from->id : PeerId(),
+			.replyTo = FullReplyTo{
+				.messageId = replyId
+					? FullMsgId(replyPeer, replyId)
+					: FullMsgId(),
+				.topicRootId = MsgId(
+					message.replyTopId
+						? message.replyTopId
+						: message.topicId),
+			},
+			.date = message.date ? message.date : message.entityCreateDate,
+			.postAuthor = postAuthor,
+		}, text, MTP_messageMediaEmpty());
+		item->setDeleted();
+		item->markDeletedAnimated();
+		_ayuRestoredDeletedMessageIds.emplace(message.messageId, item->id);
+	}
+}
+
 void History::checkLocalMessages() {
 	if (isEmpty() && (!loadedAtTop() || !loadedAtBottom())) {
 		return;
@@ -4188,6 +4296,7 @@ void History::checkLocalMessages() {
 	const auto goodDate = [&](TimeId date) {
 		return (date >= firstDate && date < lastDate);
 	};
+	restoreAyuDeletedMessages(firstDate, lastDate);
 	for (const auto &item : _clientSideMessages) {
 		if (!item->mainView() && goodDate(item->date())) {
 			insertMessageToBlocks(item);
@@ -4381,6 +4490,7 @@ void History::clear(ClearType type, bool markEmpty) {
 	if (type == ClearType::Unload) {
 		_loadedAtTop = _loadedAtBottom = markEmpty;
 	} else {
+		_ayuRestoredDeletedMessageIds.clear();
 		// Leave the 'sending' messages in local messages.
 		auto local = std::vector<not_null<HistoryItem*>>();
 		local.reserve(_clientSideMessages.size());

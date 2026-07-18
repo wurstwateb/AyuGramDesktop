@@ -539,6 +539,7 @@ private:
 	// calls the required previousItemChanged()
 	void removeBlock(not_null<HistoryBlock*> block);
 	void clearSharedMedia();
+	void restoreAyuDeletedMessages(TimeId firstDate, TimeId lastDate);
 
 	not_null<HistoryItem*> insertItem(std::unique_ptr<HistoryItem> item);
 	not_null<HistoryItem*> addNewItem(
@@ -672,6 +673,7 @@ private:
 	std::optional<HistoryItem*> _lastMessage;
 	std::optional<HistoryItem*> _lastServerMessage;
 	base::flat_set<not_null<HistoryItem*>> _clientSideMessages;
+	base::flat_map<int, MsgId> _ayuRestoredDeletedMessageIds;
 	std::unordered_set<std::unique_ptr<HistoryItem>> _items;
 
 	std::unique_ptr<Data::HistoryMessages> _messages;
