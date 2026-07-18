@@ -27,6 +27,7 @@ class DocumentData;
 class HistoryItem;
 class PeerData;
 class UserData;
+struct PeerId;
 
 namespace Main {
 class Session;
