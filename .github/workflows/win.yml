@@ -47,7 +47,7 @@ jobs:
         run: |
           TBUILD_UNIX="$(cygpath -u "$USERPROFILE")/TBuild"
           PROGRAMFILES_UNIX="$(cygpath -u "$PROGRAMFILES")"
-          DOCPATH="$TBUILD_UNIX/$REPO_NAME/docs/building-win.md"
+          DOCPATH="$TBUILD_UNIX/$REPO_NAME/docs/building-win-x64.md"
           SDK="$(grep "SDK version" "$DOCPATH" | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/')"
           echo "SDK=$SDK" >> $GITHUB_ENV
 
