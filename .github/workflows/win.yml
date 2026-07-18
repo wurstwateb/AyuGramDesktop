@@ -45,12 +45,13 @@ jobs:
       - name: First set up.
         shell: bash
         run: |
-          TBUILD_UNIX="$(cygpath -u "$TBUILD")"
+          TBUILD_UNIX="$(cygpath -u "$USERPROFILE")/TBuild"
+          PROGRAMFILES_UNIX="$(cygpath -u "$PROGRAMFILES")"
           DOCPATH="$TBUILD_UNIX/$REPO_NAME/docs/building-win.md"
           SDK="$(grep "SDK version" "$DOCPATH" | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/')"
           echo "SDK=$SDK" >> $GITHUB_ENV
 
-          sed -i '/CMAKE_${lang}_FLAGS_DEBUG_INIT/s/${_Zi}//' "$PROGRAMFILES"/CMake/share/cmake*/Modules/Platform/Windows-MSVC.cmake
+          sed -i '/CMAKE_${lang}_FLAGS_DEBUG_INIT/s/${_Zi}//' "$PROGRAMFILES_UNIX"/CMake/share/cmake*/Modules/Platform/Windows-MSVC.cmake
 
           echo "$(sha256sum "$TBUILD_UNIX/$REPO_NAME/$PREPARE_PATH" | awk '{ print $1 }')" >> CACHE_KEY.txt
           echo "$SDK" >> CACHE_KEY.txt
@@ -166,7 +167,7 @@ jobs:
 
       - name: Free up some disk space.
         shell: bash
-        run: find "$(cygpath -u "$LibrariesPath")" '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' ')' -type f ')' -o -empty ')' -delete
+        run: find "$(cygpath -u "$USERPROFILE")/TBuild/Libraries/win64" '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' ')' -type f ')' -o -empty ')' -delete
 
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
