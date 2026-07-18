@@ -2,6 +2,9 @@
 
 ![AyuGram Лого](.github/AyuGram.png) ![AyuChan](.github/AyuChan.png)
 
+> [!IMPORTANT]
+> Это неофициальная фанатская версия AyuGram Desktop, обновлённая на базе Telegram Desktop 7.0.3. Проект не связан с Telegram, официальной командой AyuGram или Radolyn Labs и не поддерживается ими. Используйте экспериментальные сборки на свой риск.
+
 [ [English](README.md)  | Русский ]
 
 ## Функции и Фишки

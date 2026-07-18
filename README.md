@@ -2,6 +2,9 @@
 
 ![AyuGram Logo](.github/AyuGram.png) ![AyuChan](.github/AyuChan.png)
 
+> [!IMPORTANT]
+> This repository contains an unofficial, fan-maintained version of AyuGram Desktop updated on top of Telegram Desktop 7.0.3. It is not affiliated with or endorsed by Telegram, the official AyuGram team, or Radolyn Labs. Use experimental builds at your own risk.
+
 [ English  |   [Русский](README-RU.md) ]
 
 ## Features
