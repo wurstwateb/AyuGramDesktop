@@ -215,6 +215,14 @@ jobs:
         shell: bash
         run: find "$(cygpath -u "$USERPROFILE")/TBuild/Libraries/win64" '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' ')' -type f ')' -o -empty ')' -delete
 
+      - name: Limit MSVC parallel compilation (fix C1060 OOM).
+        shell: bash
+        run: |
+          F="$(cygpath -u "$USERPROFILE")/TBuild/$REPO_NAME/cmake/options_win.cmake"
+          sed -i -E 's#/MP([[:space:]])#/MP2\1#' "$F"
+          echo "Patched /MP -> /MP2 in $F:"
+          grep -n "/MP" "$F" || true
+
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
         run: |
@@ -233,7 +241,7 @@ jobs:
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
           %TDESKTOP_BUILD_DEFINE%
 
-          cmake --build ..\out --config Release --parallel 2 -- /p:CL_MPCount=2
+          cmake --build ..\out --config Release --parallel 2
 
       - name: Move artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
