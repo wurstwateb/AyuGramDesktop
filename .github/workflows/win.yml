@@ -25,6 +25,13 @@ jobs:
         shell: cmd
 
     steps:
+      - name: Configure Pagefile.
+        uses: al-cheb/configure-pagefile-action@v1.4
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+
       - name: Prepare directories.
         run: |
           mkdir %userprofile%\TBuild\Libraries
