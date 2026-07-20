@@ -226,7 +226,7 @@ jobs:
           # qwindows.lib is present but its plugin-registration object gets stripped by the linker,
           # so the QPA "windows" platform plugin is missing at runtime. Force-import it via a
           # directly-compiled TU (kept by the linker) that references the static plugin symbol.
-          printf '#include <QtPlugin>\nQ_IMPORT_PLUGIN(QWindowsIntegrationPlugin)\n' > "$ROOT/Telegram/SourceFiles/ci_static_plugins.cpp"
+          printf '#include <QtPlugin>\nQ_IMPORT_PLUGIN(QWindowsIntegrationPlugin)\nQ_IMPORT_PLUGIN(QSchannelBackendPlugin)\nQ_IMPORT_PLUGIN(QNLMNIPlugin)\nQ_IMPORT_PLUGIN(QJpegPlugin)\nQ_IMPORT_PLUGIN(QGifPlugin)\nQ_IMPORT_PLUGIN(QWebpPlugin)\n' > "$ROOT/Telegram/SourceFiles/ci_static_plugins.cpp"
           printf '\nif (WIN32)\n    target_sources(Telegram PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SourceFiles/ci_static_plugins.cpp")\n    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/SourceFiles/ci_static_plugins.cpp" PROPERTIES SKIP_PRECOMPILE_HEADERS ON)\nendif()\n' >> "$ROOT/Telegram/CMakeLists.txt"
           echo "--- ci_static_plugins.cpp ---"; cat "$ROOT/Telegram/SourceFiles/ci_static_plugins.cpp"
           echo "--- Telegram/CMakeLists.txt tail ---"; tail -6 "$ROOT/Telegram/CMakeLists.txt" || true
