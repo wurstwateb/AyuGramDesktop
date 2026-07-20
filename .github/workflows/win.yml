@@ -215,7 +215,7 @@ jobs:
         shell: bash
         run: find "$(cygpath -u "$USERPROFILE")/TBuild/Libraries/win64" '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' ')' -type f ')' -o -empty ')' -delete
 
-      - name: Patch build (cap MSVC parallelism + link Dnsapi).
+      - name: Patch build (cap MSVC parallelism + link Dnsapi + import qwindows).
         shell: bash
         run: |
           ROOT="$(cygpath -u "$USERPROFILE")/TBuild/$REPO_NAME"
@@ -223,8 +223,11 @@ jobs:
           sed -i -E 's#/MP([[:space:]])#/MP2\1#' "$ROOT/cmake/options_win.cmake"
           # Qt 6.11 Qt6Network (qdnslookup_win) needs Windows DNS API -> link Dnsapi.lib into Telegram.
           sed -i 's#^        delayimp$#        delayimp\n        Dnsapi.lib#' "$ROOT/Telegram/CMakeLists.txt"
+          # qwindows.lib is present but its objects are never pulled into the exe -> the QPA
+          # "windows" platform plugin is missing at runtime. Force-import it into the Telegram target.
+          printf '\nif (WIN32)\n    qt6_import_plugins(Telegram INCLUDE Qt6::QWindowsIntegrationPlugin)\nendif()\n' >> "$ROOT/Telegram/CMakeLists.txt"
           echo "--- options_win.cmake /MP ---"; grep -n "/MP" "$ROOT/cmake/options_win.cmake" || true
-          echo "--- Telegram/CMakeLists.txt Dnsapi ---"; grep -n "Dnsapi.lib" "$ROOT/Telegram/CMakeLists.txt" || true
+          echo "--- Telegram/CMakeLists.txt tail ---"; tail -6 "$ROOT/Telegram/CMakeLists.txt" || true
 
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
