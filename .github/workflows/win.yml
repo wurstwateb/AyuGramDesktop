@@ -223,10 +223,12 @@ jobs:
           sed -i -E 's#/MP([[:space:]])#/MP2\1#' "$ROOT/cmake/options_win.cmake"
           # Qt 6.11 Qt6Network (qdnslookup_win) needs Windows DNS API -> link Dnsapi.lib into Telegram.
           sed -i 's#^        delayimp$#        delayimp\n        Dnsapi.lib#' "$ROOT/Telegram/CMakeLists.txt"
-          # qwindows.lib is present but its objects are never pulled into the exe -> the QPA
-          # "windows" platform plugin is missing at runtime. Force-import it into the Telegram target.
-          printf '\nif (WIN32)\n    qt6_import_plugins(Telegram INCLUDE Qt6::QWindowsIntegrationPlugin)\nendif()\n' >> "$ROOT/Telegram/CMakeLists.txt"
-          echo "--- options_win.cmake /MP ---"; grep -n "/MP" "$ROOT/cmake/options_win.cmake" || true
+          # qwindows.lib is present but its plugin-registration object gets stripped by the linker,
+          # so the QPA "windows" platform plugin is missing at runtime. Force-import it via a
+          # directly-compiled TU (kept by the linker) that references the static plugin symbol.
+          printf '#include <QtPlugin>\nQ_IMPORT_PLUGIN(QWindowsIntegrationPlugin)\n' > "$ROOT/Telegram/SourceFiles/ci_static_plugins.cpp"
+          printf '\nif (WIN32)\n    target_sources(Telegram PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SourceFiles/ci_static_plugins.cpp")\n    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/SourceFiles/ci_static_plugins.cpp" PROPERTIES SKIP_PRECOMPILE_HEADERS ON)\nendif()\n' >> "$ROOT/Telegram/CMakeLists.txt"
+          echo "--- ci_static_plugins.cpp ---"; cat "$ROOT/Telegram/SourceFiles/ci_static_plugins.cpp"
           echo "--- Telegram/CMakeLists.txt tail ---"; tail -6 "$ROOT/Telegram/CMakeLists.txt" || true
 
       - name: Telegram Desktop build.
