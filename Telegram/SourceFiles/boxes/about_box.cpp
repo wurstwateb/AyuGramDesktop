@@ -42,18 +42,30 @@ rpl::producer<TextWithEntities> Text() {
 		lt_gpl_link,
 		rpl::single(Ui::Text::Link(
 			"GNU GPL",
-			"https://github.com/AyuGram/AyuGramDesktop/blob/dev/LICENSE")),
+			"https://github.com/wurstwateb/AyuGramDesktop/blob/main/LICENSE")),
 		lt_github_link,
 		rpl::single(Ui::Text::Link(
 			"GitHub",
-			"https://github.com/AyuGram/AyuGramDesktop")),
+			"https://github.com/wurstwateb/AyuGramDesktop")),
 		tr::marked);
+}
+
+rpl::producer<TextWithEntities> CommunityNote() {
+	auto text = TextWithEntities();
+	text.append(
+		u"Community Edition — an unofficial build made by the community. Based on "_q);
+	text.append(Ui::Text::Link(
+		u"AyuGram"_q,
+		u"https://github.com/AyuGram/AyuGramDesktop"_q));
+	text.append(
+		u" by Radolyn Labs; not affiliated with or endorsed by them."_q);
+	return rpl::single(std::move(text));
 }
 
 } // namespace
 
 void AboutBox(not_null<Ui::GenericBox*> box, Window::SessionController* controller) {
-	box->setTitle(rpl::single(u"AyuGram Desktop"_q));
+	box->setTitle(rpl::single(u"AyuGram Community Edition"_q));
 
 	auto layout = box->verticalLayout();
 
@@ -85,6 +97,7 @@ void AboutBox(not_null<Ui::GenericBox*> box, Window::SessionController* controll
 	};
 
 	addText(Text());
+	addText(CommunityNote());
 
 	box->addButton(tr::lng_close(), [=] { box->closeBox(); });
 	box->addLeftButton(
