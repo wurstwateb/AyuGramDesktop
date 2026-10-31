@@ -1,0 +1,23 @@
+[Unit]
+Description=TypendruckerGram Sync relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=typsync
+Group=typsync
+WorkingDirectory=/var/lib/typsync
+EnvironmentFile=/etc/typsync/relay.env
+ExecStart=/opt/typsync/venv/bin/python -m typsync.relay --host 127.0.0.1 --port 8090
+Restart=always
+RestartSec=3
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/typsync
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
