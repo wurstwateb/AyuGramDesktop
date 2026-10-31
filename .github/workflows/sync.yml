@@ -1,0 +1,30 @@
+name: Sync.
+
+on:
+  push:
+    paths:
+      - "sync-server/**"
+      - "docs/sync/**"
+      - "Telegram/SourceFiles/ayu/sync/**"
+      - ".github/workflows/sync.yml"
+  pull_request:
+    paths:
+      - "sync-server/**"
+      - "docs/sync/**"
+      - "Telegram/SourceFiles/ayu/sync/**"
+  workflow_dispatch:
+
+jobs:
+  server:
+    name: Server tests
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: sync-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]"
+      - run: python -m pytest -q
