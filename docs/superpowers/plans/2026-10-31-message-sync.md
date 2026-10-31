@@ -114,7 +114,7 @@ expires_at)`. Медиа-блобы — файлы в `/var/lib/typsync/blobs/`,
 
 Перед этапом — подтверждение пользователя на изменения на сервере.
 
-## Этап 4. Catcher
+## Этап 4. Catcher — сделан, отложен (не включён на сервере, см. спеку)
 
 **4.1 `catcher/presence.py`**: цикл раз в 30 с читает `/v1/presence`;
 конечный автомат `idle → connecting → active → draining(2 мин) → idle`;
