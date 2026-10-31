@@ -245,6 +245,10 @@ set(ayugram_files
         ayu/data/entities.h
         ayu/data/ayu_database.cpp
         ayu/data/ayu_database.h
+        ayu/sync/sync_crypto.cpp
+        ayu/sync/sync_crypto.h
+        ayu/sync/sync_events.cpp
+        ayu/sync/sync_events.h
 
         info/profile/info_profile_music_button.cpp
         info/profile/info_profile_music_button.h

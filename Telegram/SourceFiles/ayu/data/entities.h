@@ -135,3 +135,67 @@ public:
 	int messageId = 0;
 	int entityCreateDate = 0;
 };
+
+// TypendruckerGram Sync: every message the client received, kept forever, so
+// a deletion can be restored even when the chat was never opened.
+class CachedMessage
+{
+public:
+	ID userId = 0;
+	ID dialogId = 0;
+	int messageId = 0;
+	bool channel = false;
+	ID topicId = 0;
+	ID fromId = 0;
+	ID groupedId = 0;
+	int date = 0;
+	int editDate = 0;
+	int replyMessageId = 0;
+	std::string text;
+	std::string entitiesJson;
+	std::string mediaKind;
+	std::string mediaPath;
+	std::string mediaMime;
+	std::string mediaName;
+	long long mediaSize = 0;
+};
+
+// Sealed events waiting to be sent to the relay.
+class SyncOutboxItem
+{
+public:
+	ID id = 0;
+	ID userId = 0;
+	std::string relayKey;
+	std::vector<char> blob;
+	std::string mediaPath; // plaintext file to upload as a blob first, may be empty
+	std::string blobId;
+	int createdAt = 0;
+	int attempts = 0;
+};
+
+// Dedup keys of events already applied on this device.
+class SyncSeenKey
+{
+public:
+	ID userId = 0;
+	std::string dedupKey;
+	int appliedAt = 0;
+};
+
+class SyncState
+{
+public:
+	ID userId = 0;
+	bool enabled = false;
+	std::string relayUrl;
+	std::string ownerId;
+	std::string deviceId;
+	std::string token;
+	std::vector<char> ownerPrivate;
+	std::vector<char> ownerPublic;
+	long long cursor = 0;
+	long long mediaLimit = 20 * 1024 * 1024;
+	int lastSyncAt = 0;
+	bool trimmed = false;
+};

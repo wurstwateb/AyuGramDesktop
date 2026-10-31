@@ -145,6 +145,61 @@ auto storage = make_storage(
 		make_column("dialogId", &SpyMessageContentsRead::dialogId),
 		make_column("messageId", &SpyMessageContentsRead::messageId),
 		make_column("entityCreateDate", &SpyMessageContentsRead::entityCreateDate)
+	),
+	make_index("CachedMessage_byId", &CachedMessage::userId, &CachedMessage::messageId),
+	make_table<CachedMessage>(
+		"CachedMessage",
+		make_column("userId", &CachedMessage::userId),
+		make_column("dialogId", &CachedMessage::dialogId),
+		make_column("messageId", &CachedMessage::messageId),
+		make_column("channel", &CachedMessage::channel),
+		make_column("topicId", &CachedMessage::topicId),
+		make_column("fromId", &CachedMessage::fromId),
+		make_column("groupedId", &CachedMessage::groupedId),
+		make_column("date", &CachedMessage::date),
+		make_column("editDate", &CachedMessage::editDate),
+		make_column("replyMessageId", &CachedMessage::replyMessageId),
+		make_column("text", &CachedMessage::text),
+		make_column("entitiesJson", &CachedMessage::entitiesJson),
+		make_column("mediaKind", &CachedMessage::mediaKind),
+		make_column("mediaPath", &CachedMessage::mediaPath),
+		make_column("mediaMime", &CachedMessage::mediaMime),
+		make_column("mediaName", &CachedMessage::mediaName),
+		make_column("mediaSize", &CachedMessage::mediaSize),
+		primary_key(&CachedMessage::userId, &CachedMessage::dialogId, &CachedMessage::messageId)
+	),
+	make_table<SyncOutboxItem>(
+		"SyncOutbox",
+		make_column("id", &SyncOutboxItem::id, primary_key().autoincrement()),
+		make_column("userId", &SyncOutboxItem::userId),
+		make_column("relayKey", &SyncOutboxItem::relayKey),
+		make_column("blob", &SyncOutboxItem::blob),
+		make_column("mediaPath", &SyncOutboxItem::mediaPath),
+		make_column("blobId", &SyncOutboxItem::blobId),
+		make_column("createdAt", &SyncOutboxItem::createdAt),
+		make_column("attempts", &SyncOutboxItem::attempts)
+	),
+	make_table<SyncSeenKey>(
+		"SyncSeen",
+		make_column("userId", &SyncSeenKey::userId),
+		make_column("dedupKey", &SyncSeenKey::dedupKey),
+		make_column("appliedAt", &SyncSeenKey::appliedAt),
+		primary_key(&SyncSeenKey::userId, &SyncSeenKey::dedupKey)
+	),
+	make_table<SyncState>(
+		"SyncState",
+		make_column("userId", &SyncState::userId, primary_key()),
+		make_column("enabled", &SyncState::enabled),
+		make_column("relayUrl", &SyncState::relayUrl),
+		make_column("ownerId", &SyncState::ownerId),
+		make_column("deviceId", &SyncState::deviceId),
+		make_column("token", &SyncState::token),
+		make_column("ownerPrivate", &SyncState::ownerPrivate),
+		make_column("ownerPublic", &SyncState::ownerPublic),
+		make_column("cursor", &SyncState::cursor),
+		make_column("mediaLimit", &SyncState::mediaLimit),
+		make_column("lastSyncAt", &SyncState::lastSyncAt),
+		make_column("trimmed", &SyncState::trimmed)
 	)
 );
 
@@ -604,6 +659,148 @@ bool hasPerDialogFilters() {
 	} catch (std::exception &ex) {
 		LOG(("Failed to check if there's any filters: %1").arg(ex.what()));
 		return false;
+	}
+}
+
+}
+
+namespace AyuDatabase {
+
+void upsertCachedMessages(const std::vector<CachedMessage> &messages) {
+	if (messages.empty()) {
+		return;
+	}
+	try {
+		storage.begin_transaction();
+		for (const auto &message : messages) {
+			storage.replace(message);
+		}
+		storage.commit();
+	} catch (const std::exception &ex) {
+		try {
+			storage.rollback();
+		} catch (...) {
+		}
+		LOG(("Failed to cache messages: %1").arg(ex.what()));
+	}
+}
+
+std::optional<CachedMessage> getCachedMessage(ID userId, ID dialogId, int messageId) {
+	try {
+		auto rows = storage.get_all<CachedMessage>(
+			where(
+				column<CachedMessage>(&CachedMessage::userId) == userId and
+				column<CachedMessage>(&CachedMessage::dialogId) == dialogId and
+				column<CachedMessage>(&CachedMessage::messageId) == messageId
+			),
+			limit(1)
+		);
+		if (!rows.empty()) {
+			return std::move(rows.front());
+		}
+	} catch (const std::exception &ex) {
+		LOG(("Failed to read cached message: %1").arg(ex.what()));
+	}
+	return std::nullopt;
+}
+
+std::optional<CachedMessage> findNonChannelCachedMessage(ID userId, int messageId) {
+	try {
+		auto rows = storage.get_all<CachedMessage>(
+			where(
+				column<CachedMessage>(&CachedMessage::userId) == userId and
+				column<CachedMessage>(&CachedMessage::messageId) == messageId and
+				column<CachedMessage>(&CachedMessage::channel) == false
+			),
+			limit(1)
+		);
+		if (!rows.empty()) {
+			return std::move(rows.front());
+		}
+	} catch (const std::exception &ex) {
+		LOG(("Failed to find cached message: %1").arg(ex.what()));
+	}
+	return std::nullopt;
+}
+
+void addOutbox(const SyncOutboxItem &item) {
+	try {
+		storage.insert(item);
+	} catch (const std::exception &ex) {
+		LOG(("Failed to queue sync event: %1").arg(ex.what()));
+	}
+}
+
+std::vector<SyncOutboxItem> getOutbox(ID userId, int limitCount) {
+	try {
+		return storage.get_all<SyncOutboxItem>(
+			where(column<SyncOutboxItem>(&SyncOutboxItem::userId) == userId),
+			order_by(column<SyncOutboxItem>(&SyncOutboxItem::id)).asc(),
+			limit(limitCount)
+		);
+	} catch (const std::exception &ex) {
+		LOG(("Failed to read sync outbox: %1").arg(ex.what()));
+		return {};
+	}
+}
+
+void removeOutbox(const std::vector<ID> &ids) {
+	if (ids.empty()) {
+		return;
+	}
+	try {
+		storage.remove_all<SyncOutboxItem>(
+			where(in(column<SyncOutboxItem>(&SyncOutboxItem::id), ids)));
+	} catch (const std::exception &ex) {
+		LOG(("Failed to clean sync outbox: %1").arg(ex.what()));
+	}
+}
+
+void updateOutbox(const SyncOutboxItem &item) {
+	try {
+		storage.update(item);
+	} catch (const std::exception &ex) {
+		LOG(("Failed to update sync outbox: %1").arg(ex.what()));
+	}
+}
+
+bool markSeen(ID userId, const std::string &dedupKey, int now) {
+	try {
+		const auto exists = !storage.select(
+			columns(column<SyncSeenKey>(&SyncSeenKey::userId)),
+			where(
+				column<SyncSeenKey>(&SyncSeenKey::userId) == userId and
+				column<SyncSeenKey>(&SyncSeenKey::dedupKey) == dedupKey
+			),
+			limit(1)
+		).empty();
+		if (exists) {
+			return false;
+		}
+		storage.replace(SyncSeenKey{userId, dedupKey, now});
+		return true;
+	} catch (const std::exception &ex) {
+		LOG(("Failed to mark sync key: %1").arg(ex.what()));
+		return true;
+	}
+}
+
+std::optional<SyncState> getSyncState(ID userId) {
+	try {
+		if (const auto state = storage.get_pointer<SyncState>(userId)) {
+			return *state;
+		}
+	} catch (const std::exception &ex) {
+		LOG(("Failed to read sync state: %1").arg(ex.what()));
+	}
+	return std::nullopt;
+}
+
+void saveSyncState(const SyncState &state) {
+	try {
+		storage.replace(state);
+	} catch (const std::exception &ex) {
+		LOG(("Failed to save sync state: %1").arg(ex.what()));
 	}
 }
 

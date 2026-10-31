@@ -9,6 +9,7 @@
 #include "ayu/data/entities.h"
 
 #include <functional>
+#include <optional>
 
 class SchemaVersion
 {
@@ -57,5 +58,22 @@ bool hasFilters();
 bool hasPerDialogFilters();
 
 void moveCurrentDatabase();
+
+// TypendruckerGram Sync.
+void upsertCachedMessages(const std::vector<CachedMessage> &messages);
+std::optional<CachedMessage> getCachedMessage(ID userId, ID dialogId, int messageId);
+// Private chats and basic groups: message ids are unique per account.
+std::optional<CachedMessage> findNonChannelCachedMessage(ID userId, int messageId);
+
+void addOutbox(const SyncOutboxItem &item);
+std::vector<SyncOutboxItem> getOutbox(ID userId, int limit);
+void removeOutbox(const std::vector<ID> &ids);
+void updateOutbox(const SyncOutboxItem &item);
+
+// Returns false if the key was already applied.
+bool markSeen(ID userId, const std::string &dedupKey, int now);
+
+std::optional<SyncState> getSyncState(ID userId);
+void saveSyncState(const SyncState &state);
 
 }

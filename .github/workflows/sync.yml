@@ -28,3 +28,17 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[test]"
       - run: python -m pytest -q
+
+  desktop-crypto:
+    name: Desktop crypto vs vectors
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y --no-install-recommends libssl-dev g++
+      - name: Build and run
+        run: |
+          python3 Telegram/SourceFiles/ayu/sync/tests/flatten_vectors.py docs/sync/test-vectors.json > vectors.txt
+          g++ -std=c++20 -Wall -Wextra -Werror -I Telegram/SourceFiles \
+            Telegram/SourceFiles/ayu/sync/tests/sync_crypto_test.cpp \
+            Telegram/SourceFiles/ayu/sync/sync_crypto.cpp -lcrypto -o sync_crypto_test
+          ./sync_crypto_test vectors.txt
