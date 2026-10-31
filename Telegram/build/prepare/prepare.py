@@ -1685,8 +1685,8 @@ win:
         -D LCMS2_INCLUDE_DIR="%LCMS2_DIR%\\include" ^
         -D LCMS2_LIBRARIES="%LCMS2_DIR%\\out\\Release\\src\\liblcms2.a"
 
-    cmake --build . --config Release
-    cmake --install . --config Release
+    cmake --build .
+    cmake --install .
 """)
 
 stage('tg_owt', """
