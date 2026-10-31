@@ -18,6 +18,11 @@ from typsync.client import RelayClient
 
 
 async def setup(args: argparse.Namespace) -> None:
+    if os.path.exists(args.config) and not args.repair:
+        print(f"Сопряжение уже выполнено ({args.config}), перехожу ко входу в Telegram.")
+        print("Чтобы сопрячь заново, запустите с --repair.")
+        await login(CatcherConfig.load(args.config), args.session)
+        return
     print("API ID и API hash берутся на https://my.telegram.org → API development tools.")
     api_id = int(args.api_id or input("API ID: ").strip())
     api_hash = args.api_hash or getpass.getpass("API hash (не отображается): ").strip()
@@ -37,12 +42,18 @@ async def setup(args: argparse.Namespace) -> None:
     config.save(args.config)
     print(f"Сопряжение выполнено, настройки сохранены в {args.config}.")
 
+    await login(config, args.session)
+
+
+async def login(config: CatcherConfig, session: str) -> None:
     print("Теперь вход в Telegram для юзербота.")
+    print("Код придёт в приложение Telegram тестового аккаунта (чат «Telegram»),"
+          " а не по SMS, если аккаунт где-то уже открыт.")
     client = make_telegram_client(config)
     await client.start()
     me = await client.get_me()
     await client.disconnect()
-    os.chmod(args.session + ".session", 0o600)
+    os.chmod(session + ".session", 0o600)
     print(f"Готово: юзербот вошёл как {me.first_name} (id {me.id}).")
     print("Запустите сервис: sudo systemctl enable --now typsync-catcher")
 
@@ -54,6 +65,8 @@ def main() -> None:
     parser.add_argument("--relay", default="http://127.0.0.1:8090")
     parser.add_argument("--api-id")
     parser.add_argument("--api-hash")
+    parser.add_argument("--repair", action="store_true",
+                        help="pair again even if a config already exists")
     asyncio.run(setup(parser.parse_args()))
 
 
