@@ -170,7 +170,7 @@ jobs:
       - name: Read configuration matrix.
         shell: bash
         run: |
-          ARTIFACT_NAME="AyuGram"
+          ARTIFACT_NAME="TypendruckerGram"
 
           ARCH=""
           if [ -n "${{ matrix.arch }}" ]; then
@@ -245,7 +245,7 @@ jobs:
           -D CMAKE_CONFIGURATION_TYPES=Release ^
           -D CMAKE_COMPILE_WARNING_AS_ERROR=ON ^
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
-          -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
           %TDESKTOP_BUILD_DEFINE%
 
@@ -256,7 +256,7 @@ jobs:
         run: |
           set OUT=%TBUILD%\%REPO_NAME%\out\Release
           mkdir artifact
-          move %OUT%\AyuGram.exe artifact/
+          move %OUT%\TypendruckerGram.exe artifact/
           move %OUT%\Updater.exe artifact/
       - uses: actions/upload-artifact@v7
         name: Upload artifact.

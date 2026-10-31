@@ -53,7 +53,7 @@ rpl::producer<TextWithEntities> Text() {
 rpl::producer<TextWithEntities> CommunityNote() {
 	auto text = TextWithEntities();
 	text.append(
-		u"Community Edition — an unofficial build made by the community. Based on "_q);
+		u"TypendruckerGram — an unofficial build made by the community. Based on "_q);
 	text.append(Ui::Text::Link(
 		u"AyuGram"_q,
 		u"https://github.com/AyuGram/AyuGramDesktop"_q));
@@ -65,7 +65,7 @@ rpl::producer<TextWithEntities> CommunityNote() {
 } // namespace
 
 void AboutBox(not_null<Ui::GenericBox*> box, Window::SessionController* controller) {
-	box->setTitle(rpl::single(u"AyuGram Community Edition"_q));
+	box->setTitle(rpl::single(u"TypendruckerGram"_q));
 
 	auto layout = box->verticalLayout();
 

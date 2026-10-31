@@ -33,6 +33,15 @@ constexpr auto postfixes = {
 	"other"
 };
 
+// TypendruckerGram: strings that credit upstream AyuGram keep its name.
+const auto kKeepUpstreamName = QStringList{
+	"ayu_SettingsWatermark",
+	"ayu_SupporterPopup",
+	"ayu_OfficialResourcePopup",
+	"ayu_ExteraChatsAlert",
+	"ayu_IconAlternative",
+};
+
 AyuLanguage *AyuLanguage::instance = nullptr;
 
 AyuLanguage::AyuLanguage() = default;
@@ -194,6 +203,10 @@ void AyuLanguage::applyLanguageJson(QJsonDocument doc) {
 
 		if (key.endsWith("_PC")) {
 			key = key.replace("_PC", "");
+		}
+
+		if (!kKeepUpstreamName.contains(key)) {
+			val = val.replace(qsl("AyuGram"), qsl("TypendruckerGram"));
 		}
 
 		if (val.contains(qsl("%1$d")) && !val.contains(qsl("%2$d"))) {

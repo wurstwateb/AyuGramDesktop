@@ -232,7 +232,7 @@ bool GenerateDesktopFile(
 	DEBUG_LOG(("App Info: placing .desktop file to %1").arg(targetPath));
 	if (!QDir(targetPath).exists()) QDir().mkpath(targetPath);
 
-	const auto sourceFile = u":/misc/com.ayugram.desktop.desktop"_q;
+	const auto sourceFile = u":/misc/com.typendruckergram.desktop.desktop"_q;
 	const auto targetFile = targetPath
 		+ QGuiApplication::desktopFileName()
 		+ u".desktop"_q;
@@ -371,7 +371,7 @@ bool GenerateDesktopFile(
 		hashMd5Hex(d.constData(), d.size(), md5Hash);
 
 		if (!Core::Launcher::Instance().customWorkingDir()) {
-			QFile::remove(u"%1ayugram.desktop._%2.desktop"_q.arg(
+			QFile::remove(u"%1typendruckergram.desktop._%2.desktop"_q.arg(
 				targetPath,
 				md5Hash));
 
@@ -380,7 +380,7 @@ bool GenerateDesktopFile(
 			hashMd5Hex(exePath.constData(), exePath.size(), md5Hash);
 		}
 
-		QFile::remove(u"%1ayugram.desktop.%2.desktop"_q.arg(
+		QFile::remove(u"%1typendruckergram.desktop.%2.desktop"_q.arg(
 			targetPath,
 			md5Hash));
 	}
@@ -737,11 +737,11 @@ void start() {
 		}
 
 		if (!Core::UpdaterDisabled()) {
-			return u"com.ayugram.desktop._%1"_q.arg(
+			return u"com.typendruckergram.desktop._%1"_q.arg(
 				Core::Launcher::Instance().instanceHash().constData());
 		}
 
-		return u"com.ayugram.desktop"_q;
+		return u"com.typendruckergram.desktop"_q;
 	}());
 
 	LOG(("App ID: %1").arg(QGuiApplication::desktopFileName()));
