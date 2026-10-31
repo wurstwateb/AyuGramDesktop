@@ -17,7 +17,7 @@ rsync -a --delete --exclude '.venv' --exclude '__pycache__' --exclude '*.egg-inf
     "$SRC/" /opt/typsync/src/
 [ -x /opt/typsync/venv/bin/python ] || python3 -m venv /opt/typsync/venv
 /opt/typsync/venv/bin/pip install -q --upgrade pip
-/opt/typsync/venv/bin/pip install -q /opt/typsync/src
+/opt/typsync/venv/bin/pip install -q "/opt/typsync/src[catcher]"
 
 if [ ! -f /etc/typsync/relay.env ]; then
     ( umask 027
@@ -34,6 +34,14 @@ install -m 644 "$SRC/deploy/typsync-relay.service" /etc/systemd/system/typsync-r
 systemctl daemon-reload
 systemctl enable --now typsync-relay.service
 systemctl restart typsync-relay.service
+
+# The catcher starts only after `python -m typsync.catcher.setup` created its config.
+install -m 644 "$SRC/deploy/typsync-catcher.service" /etc/systemd/system/typsync-catcher.service
+systemctl daemon-reload
+if [ -f /var/lib/typsync/catcher.json ]; then
+    systemctl enable typsync-catcher.service
+    systemctl restart typsync-catcher.service
+fi
 
 if ! grep -q 'handle_path /typsync/\*' "$CADDYFILE"; then
     cp "$CADDYFILE" "$CADDYFILE.bak-typsync-$(date +%Y%m%d%H%M%S)"

@@ -7,7 +7,7 @@ dependencies = ["cryptography>=43", "aiohttp>=3.10"]
 
 [project.optional-dependencies]
 catcher = ["telethon>=1.36"]
-test = ["pytest>=8", "pytest-aiohttp>=1.0"]
+test = ["pytest>=8", "pytest-aiohttp>=1.0", "telethon>=1.36"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

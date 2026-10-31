@@ -21,7 +21,7 @@ def _bytes(start: int, n: int = 32) -> bytes:
 def _events() -> list[ev.Event]:
     return [
         ev.Event(ev.MESSAGE, 123456789, snapshot=ev.Snapshot(
-            dialog=-1001234567890, msg_id=42, from_id=987654321, date=1761900000,
+            dialog=-1234567890, msg_id=42, from_id=987654321, date=1761900000,
             text="Привет, мир! 👋",
             entities=[{"type": "bold", "offset": 0, "length": 6}],
             media=ev.Media("0f" * 16, "image/jpeg", 48213, "photo"))),
@@ -31,7 +31,7 @@ def _events() -> list[ev.Event]:
         ev.Event(ev.DELETE, 123456789, dialog=0, msg_ids=[9, 8], date=1761900300,
                  snapshots=[ev.Snapshot(dialog=555, msg_id=8, from_id=555,
                                         date=1761900250, text="удалённое")]),
-        ev.Event(ev.DELETE, 123456789, dialog=-1001234567890, msg_ids=[100], date=1761900400),
+        ev.Event(ev.DELETE, 123456789, dialog=-1234567890, msg_ids=[100], date=1761900400),
         ev.Event(ev.MESSAGE, 123456789, snapshot=ev.Snapshot(
             dialog=555, msg_id=11, from_id=555, date=1761900500, text="")),
     ]

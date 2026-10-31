@@ -1,0 +1,23 @@
+[Unit]
+Description=TypendruckerGram Sync catcher (night userbot)
+After=network-online.target typsync-relay.service
+Wants=network-online.target
+ConditionPathExists=/var/lib/typsync/catcher.json
+
+[Service]
+User=typsync
+Group=typsync
+WorkingDirectory=/var/lib/typsync
+ExecStart=/opt/typsync/venv/bin/python -m typsync.catcher --config /var/lib/typsync/catcher.json
+Restart=always
+RestartSec=10
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/typsync
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

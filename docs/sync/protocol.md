@@ -57,7 +57,7 @@ ciphertext||tag = AES-256-GCM(key, nonce, plaintext, aad = "typsync")
 
 | Поле | Тип | Смысл |
 |---|---|---|
-| `dialog` | int64 | ID диалога как в AyuGram (`getDialogIdFromPeer`) |
+| `dialog` | int64 | ID диалога как в AyuGram (`getDialogIdFromPeer`): пользователь — его ID (> 0); группа, супергруппа, канал — **минус «голый» ID, без префикса -100** (канал `-1001234567890` в Bot API/Telethon → `-1234567890`) |
 | `msgId` | int32 | ID сообщения |
 | `fromId` | int64 | автор |
 | `date` | int | unixtime отправки |
