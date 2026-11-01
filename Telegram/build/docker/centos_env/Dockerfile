@@ -432,6 +432,18 @@ FROM builder AS rnnoise
 RUN --mount=type=cache,target=/var/cache/ccache <<EOF
 git clone -b v0.2 --depth=1 https://github.com/xiph/rnnoise.git
 cd rnnoise
+# v0.2 includes os_support.h on non-x86 builds but does not ship it.
+[ -f src/os_support.h ] || cat > src/os_support.h <<'HDR'
+#ifndef OS_SUPPORT_H
+#define OS_SUPPORT_H
+#include <string.h>
+#ifndef OPUS_INLINE
+#define OPUS_INLINE inline
+#endif
+#define OPUS_CLEAR(dst, n) (memset((dst), 0, (n)*sizeof(*(dst))))
+#define OPUS_COPY(dst, src, n) (memcpy((dst), (src), (n)*sizeof(*(dst))))
+#endif
+HDR
 ./autogen.sh
 ./configure --enable-static --disable-shared
 make -j$(nproc)
