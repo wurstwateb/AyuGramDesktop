@@ -9,6 +9,7 @@
 #include "lang_auto.h"
 #include "ayu/ayu_settings.h"
 #include "ayu/ui/boxes/donate_qr_box.h"
+#include "ayu/ui/boxes/sync_box.h"
 #include "ayu/ui/settings/ayu_builder.h"
 #include "ayu/ui/settings/settings_ayu_utils.h"
 #include "ayu/ui/settings/settings_main.h"
@@ -197,6 +198,14 @@ void BuildOtherThings(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 
 	builder.addSkip();
+	builder.addButton({
+		.id = u"ayu/sync"_q,
+		.title = tr::ayu_SyncTitle(),
+		.icon = { &st::menuIconRestore },
+		.onClick = [=] {
+			controller->show(Box(SyncBox, controller));
+		},
+	});
 	builder.addButton({
 		.id = u"ayu/registerUrlScheme"_q,
 		.title = tr::ayu_RegisterURLScheme(),

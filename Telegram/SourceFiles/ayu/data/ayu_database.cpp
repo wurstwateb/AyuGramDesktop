@@ -764,6 +764,57 @@ void updateOutbox(const SyncOutboxItem &item) {
 	}
 }
 
+bool isSeen(ID userId, const std::string &dedupKey) {
+	try {
+		return !storage.select(
+			columns(column<SyncSeenKey>(&SyncSeenKey::userId)),
+			where(
+				column<SyncSeenKey>(&SyncSeenKey::userId) == userId and
+				column<SyncSeenKey>(&SyncSeenKey::dedupKey) == dedupKey
+			),
+			limit(1)
+		).empty();
+	} catch (const std::exception &ex) {
+		LOG(("Failed to read sync key: %1").arg(ex.what()));
+		return false;
+	}
+}
+
+bool hasDeletedMessage(ID userId, ID dialogId, ID messageId) {
+	try {
+		return !storage.select(
+			columns(column<DeletedMessage>(&DeletedMessage::messageId)),
+			where(
+				column<DeletedMessage>(&DeletedMessage::userId) == userId and
+				column<DeletedMessage>(&DeletedMessage::dialogId) == dialogId and
+				column<DeletedMessage>(&DeletedMessage::messageId) == messageId
+			),
+			limit(1)
+		).empty();
+	} catch (const std::exception &ex) {
+		LOG(("Failed to check deleted message: %1").arg(ex.what()));
+		return false;
+	}
+}
+
+bool hasRevision(ID userId, ID dialogId, ID messageId, int editDate) {
+	try {
+		return !storage.select(
+			columns(column<EditedMessage>(&EditedMessage::messageId)),
+			where(
+				column<EditedMessage>(&EditedMessage::userId) == userId and
+				column<EditedMessage>(&EditedMessage::dialogId) == dialogId and
+				column<EditedMessage>(&EditedMessage::messageId) == messageId and
+				column<EditedMessage>(&EditedMessage::editDate) == editDate
+			),
+			limit(1)
+		).empty();
+	} catch (const std::exception &ex) {
+		LOG(("Failed to check revision: %1").arg(ex.what()));
+		return false;
+	}
+}
+
 bool markSeen(ID userId, const std::string &dedupKey, int now) {
 	try {
 		const auto exists = !storage.select(

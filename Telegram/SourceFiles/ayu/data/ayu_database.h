@@ -72,6 +72,9 @@ void updateOutbox(const SyncOutboxItem &item);
 
 // Returns false if the key was already applied.
 bool markSeen(ID userId, const std::string &dedupKey, int now);
+bool isSeen(ID userId, const std::string &dedupKey);
+bool hasDeletedMessage(ID userId, ID dialogId, ID messageId);
+bool hasRevision(ID userId, ID dialogId, ID messageId, int editDate);
 
 std::optional<SyncState> getSyncState(ID userId);
 void saveSyncState(const SyncState &state);

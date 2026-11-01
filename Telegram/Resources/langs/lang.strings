@@ -8976,3 +8976,29 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "ayu_AboutText1" = "ToS breaking Telegram client based on {api_link}.";
 "ayu_UpdateAyuGram" = "Update TypendruckerGram";
 "ayu_UtilityRestartRequired" = "The app will close in 5 seconds.";
+"ayu_SyncTitle" = "Sync with phone";
+"ayu_SyncSetupInfo" = "Deleted and edited messages saved here are shared with your other TypendruckerGram devices through an exchange server. Everything is encrypted on the device; the server keeps it for up to 5 days. If sync already runs on your phone, get a code there and connect with it. Otherwise start sync here with the server invite.";
+"ayu_SyncJoin" = "Connect with a code";
+"ayu_SyncCreate" = "Start sync on this device";
+"ayu_SyncInvite" = "Server invite";
+"ayu_SyncEnabled" = "Sync deleted and edited messages";
+"ayu_SyncAddDevice" = "Add a device";
+"ayu_SyncCodeText" = "Enter this code on the other device within 10 minutes:
+
+{code}";
+"ayu_SyncMediaLimit" = "Media size limit";
+"ayu_SyncMediaOff" = "Text only";
+"ayu_SyncRecommended" = "recommended";
+"ayu_SyncMediaInfo" = "Files above the limit are not sent; other devices see their type and size only.";
+"ayu_SyncNow" = "Sync now";
+"ayu_SyncStarted" = "Syncing…";
+"ayu_SyncDisconnect" = "Disconnect this device";
+"ayu_SyncDisconnectInfo" = "This device stops syncing and forgets the keys. Messages already saved here stay.";
+"ayu_SyncDisconnected" = "This device is disconnected";
+"ayu_SyncLast" = "Last synced {date}";
+"ayu_SyncNever" = "Not synced yet";
+"ayu_SyncError" = "Sync error: {error}";
+"ayu_SyncTrimmed" = "The server ran out of space and dropped some old data.";
+"ayu_SyncBadInvite" = "Wrong server invite";
+"ayu_SyncBadCode" = "Wrong or expired code";
+"ayu_SyncRateLimited" = "Too many attempts, try again in a few minutes";

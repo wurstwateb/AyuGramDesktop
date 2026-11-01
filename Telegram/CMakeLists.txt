@@ -189,6 +189,8 @@ set(ayugram_files
         ayu/ui/boxes/donate_qr_box.h
         ayu/ui/boxes/donate_info_box.cpp
         ayu/ui/boxes/donate_info_box.h
+        ayu/ui/boxes/sync_box.cpp
+        ayu/ui/boxes/sync_box.h
         ayu/ui/boxes/plugin_info_box.cpp
         ayu/ui/boxes/plugin_info_box.h
         ayu/ui/components/image_view.cpp
@@ -249,6 +251,8 @@ set(ayugram_files
         ayu/sync/sync_crypto.h
         ayu/sync/sync_events.cpp
         ayu/sync/sync_events.h
+    ayu/sync/sync_manager.cpp
+    ayu/sync/sync_manager.h
 
         info/profile/info_profile_music_button.cpp
         info/profile/info_profile_music_button.h

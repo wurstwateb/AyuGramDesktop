@@ -14,6 +14,7 @@
 #include "ayu/ayu_worker.h"
 #include "ayu/data/entities.h"
 #include "ayu/data/messages_storage.h"
+#include "ayu/sync/sync_manager.h"
 #include "ayu/features/filters/filters_controller.h"
 #include "ayu/ui/boxes/donate_info_box.h"
 #include "ayu/ui/toasts.h"
@@ -730,6 +731,7 @@ void processMessageDelete(not_null<HistoryItem*> item) {
 	} else {
 		item->setDeleted();
 		AyuMessages::addDeletedMessage(item);
+		AyuSync::OnDeleted(item);
 	}
 }
 
