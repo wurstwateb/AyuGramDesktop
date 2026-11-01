@@ -8983,9 +8983,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "ayu_SyncInvite" = "Server invite";
 "ayu_SyncEnabled" = "Sync deleted and edited messages";
 "ayu_SyncAddDevice" = "Add a device";
-"ayu_SyncCodeText" = "Enter this code on the other device within 10 minutes:
-
-{code}";
+"ayu_SyncCodeText" = "Enter this code on the other device within 10 minutes:\n\n{code}";
 "ayu_SyncMediaLimit" = "Media size limit";
 "ayu_SyncMediaOff" = "Text only";
 "ayu_SyncRecommended" = "recommended";
