@@ -260,7 +260,7 @@ jobs:
           set OUT=%TBUILD%\%REPO_NAME%\out\Release
           mkdir artifact
           move %OUT%\TypendruckerGram.exe artifact/
-          move %OUT%\Updater.exe artifact/
+          if exist %OUT%\Updater.exe move %OUT%\Updater.exe artifact/
       - uses: actions/upload-artifact@v7
         name: Upload artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
