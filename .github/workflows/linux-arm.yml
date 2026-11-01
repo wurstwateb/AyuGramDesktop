@@ -1,0 +1,114 @@
+name: Linux aarch64.
+
+# Builds a release binary for 64-bit ARM Linux inside the Rocky Linux 8
+# environment (glibc 2.28), so it runs on current Ubuntu arm64 as well.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/message-sync
+
+jobs:
+
+  linux-arm:
+    name: Linux (aarch64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+
+    env:
+      IMAGE_TAG: tdesktop:centos_env_arm
+
+    steps:
+      - name: Clone.
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: First set up.
+        run: |
+          sudo apt update
+          sudo apt install -y ccache python3-jinja2
+          echo "CCACHE_DIR=$RUNNER_TEMP/.tdesktop-cache" >> $GITHUB_ENV
+          cd Telegram/build/docker/centos_env
+          DOCKERFILE=$(DEBUG= LTO= python3 gen_dockerfile.py)
+          echo "$DOCKERFILE" > Dockerfile
+          rm -rf __pycache__
+
+      - name: Free up some disk space.
+        uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6
+        with:
+          tool-cache: true
+
+      - name: Set up Docker Buildx.
+        id: setup-buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Libraries cache.
+        id: cache-libs
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ${{ runner.temp }}/.buildx-cache
+            ${{ runner.temp }}/.mount-cache
+          key: ${{ runner.OS }}-arm64-libs-${{ hashFiles('Telegram/build/docker/centos_env/**') }}
+          restore-keys: ${{ runner.OS }}-arm64-libs-
+
+      - name: Restore Docker cache mounts.
+        uses: reproducible-containers/buildkit-cache-dance@5422eac04292c961a382e0f584ea0f03ad9da723
+        with:
+          builder: ${{ steps.setup-buildx.outputs.name }}
+          cache-dir: ${{ runner.temp }}/.mount-cache
+          dockerfile: Telegram/build/docker/centos_env/Dockerfile
+          skip-extraction: ${{ steps.cache-libs.outputs.cache-hit }}
+
+      - name: Libraries.
+        uses: docker/build-push-action@v7
+        with:
+          context: Telegram/build/docker/centos_env
+          load: true
+          tags: ${{ env.IMAGE_TAG }}
+          cache-from: type=local,src=${{ runner.temp }}/.buildx-cache
+          cache-to: type=local,dest=${{ runner.temp }}/.buildx-cache-new,mode=max
+
+      - name: Move cache.
+        run: |
+          rm -rf ${{ runner.temp }}/.buildx-cache
+          mv ${{ runner.temp }}/.buildx-cache{-new,}
+
+      # Saved before the app build, so a failing app build keeps the libraries.
+      - name: Save libraries cache.
+        if: steps.cache-libs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ${{ runner.temp }}/.buildx-cache
+            ${{ runner.temp }}/.mount-cache
+          key: ${{ steps.cache-libs.outputs.cache-primary-key }}
+
+      - name: TypendruckerGram build.
+        run: |
+          mkdir -p $CCACHE_DIR
+          docker run --rm \
+          -u $(id -u) \
+          -v $PWD:/usr/src/tdesktop \
+          -v $CCACHE_DIR:/var/cache/ccache \
+          -e CONFIG=Release \
+          $IMAGE_TAG \
+          env -u CCACHE_DISABLE /usr/src/tdesktop/Telegram/build/docker/centos_env/build.sh \
+          -D CMAKE_CONFIGURATION_TYPES=Release \
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF
+
+      - name: Move artifact.
+        run: |
+          mkdir artifact
+          file out/Release/TypendruckerGram
+          strip -o artifact/TypendruckerGram out/Release/TypendruckerGram
+          ls -l artifact
+
+      - uses: actions/upload-artifact@v7
+        name: Upload artifact.
+        with:
+          name: TypendruckerGram-linux-aarch64
+          path: artifact/
