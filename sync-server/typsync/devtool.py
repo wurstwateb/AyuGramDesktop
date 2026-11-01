@@ -2,6 +2,7 @@
 catcher before the Desktop client is ready.
 
     python -m typsync.devtool --state dev.json init --relay URL --invite SECRET
+    python -m typsync.devtool --state dev.json join CODE         # join as a device
     python -m typsync.devtool --state dev.json pair-catcher      # prints a code
     python -m typsync.devtool --state dev.json pull              # decrypt and print
     python -m typsync.devtool --state dev.json status
@@ -59,6 +60,19 @@ async def cmd_pair(args: argparse.Namespace, kind: str) -> None:
     print(f"pair code ({kind}, valid 10 min): {code}  expires at {body['expiresAt']}")
 
 
+async def cmd_join(args: argparse.Namespace) -> None:
+    code = crypto.normalize_pair_code(args.code)
+    async with RelayClient(args.relay) as relay:
+        body = await relay.call("POST", "/v1/pair/claim", auth=False, json={
+            "lookupHash": crypto.pair_lookup_hash(code), "name": args.name})
+    payload = json.loads(crypto.pair_decrypt(code, base64.b64decode(body["payload"])))
+    private = base64.b64decode(payload["ownerPrivate"])
+    save(args.state, {"relay": payload.get("relayUrl") or args.relay, "token": body["token"],
+                      "ownerId": body["ownerId"], "deviceId": body["deviceId"],
+                      "private": b64(private), "public": b64(crypto.public_from_private(private))})
+    print(f"joined owner {body['ownerId']} as device {body['deviceId']}")
+
+
 async def cmd_pull(args: argparse.Namespace) -> None:
     state = load(args.state)
     private = base64.b64decode(state["private"])
@@ -112,6 +126,10 @@ def main() -> None:
     init.add_argument("--relay", default="https://unionofjackbox.tokenized.name/typsync")
     init.add_argument("--invite")
     init.add_argument("--name", default="devtool")
+    join = sub.add_parser("join", help="join an existing owner with a pair code")
+    join.add_argument("code")
+    join.add_argument("--relay", default="https://unionofjackbox.tokenized.name/typsync")
+    join.add_argument("--name", default="devtool")
     sub.add_parser("pair-catcher")
     sub.add_parser("pair-device")
     pull = sub.add_parser("pull")
@@ -125,6 +143,8 @@ def main() -> None:
 
     if args.command == "init":
         coro = cmd_init(args)
+    elif args.command == "join":
+        coro = cmd_join(args)
     elif args.command == "pair-catcher":
         coro = cmd_pair(args, "catcher")
     elif args.command == "pair-device":
